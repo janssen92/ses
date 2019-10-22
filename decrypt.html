@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">    
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>         
+            <h3>Encrypted Message:</h3>
+            <textarea id="encrypted_message"></textarea>
+            <button id="decrypt" onclick="decrypt()">Decrypt</button>
+            <div class="text" id="loading" hidden>Decrypting...</div>
+            <textarea id="decrypted_message" hidden></textarea>
+        </div>
+    </body>
+    <script>
+            const PARAMS = {
+                            name: "RSA-OAEP",
+                            modulusLength: 4096,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: "SHA-512"
+                        };
+            const FORMAT = "jwk";
+            const dec = new TextDecoder();
+            let privateKey;
+    
+            const loadPrivateKey = async () => {
+                    if (!privateKey) {
+                        privateKey = await window.crypto.subtle.importKey(FORMAT, JSON.parse(localStorage.getItem('ses_private_key')), PARAMS, true, ["decrypt"])
+                    }
+            }
+    
+            const decrypt = async () => {
+                document.getElementById('loading').style.display = "block";
+                await loadPrivateKey()
+                message = document.getElementById('encrypted_message').value
+                if(!message || message.length < 10) {
+                    alert('Please insert the encrypted message your recieved into the textarea.')
+                    return
+                }
+                const result = await window.crypto.subtle.decrypt(PARAMS, privateKey,  Uint8Array.from(atob(message).split(',')))
+                
+                document.getElementById('decrypted_message').value = String.fromCharCode.apply(null, new Uint8Array(result));
+                document.getElementById('decrypted_message').style.display = "block"; 
+                document.getElementById('loading').style.display = "none";
+            }
+    
+    
+            function str2ab(str) {
+                let buf = new ArrayBuffer(str.length * 2);
+                let bufView = new Uint8Array(buf);
+                for (let i = 0, strLen = str.length; i < strLen; i++) {
+                    bufView[i] = str.charCodeAt(i);
+                }
+                return buf;
+            }
+    
+            if(!localStorage.getItem('ses_private_key')) {
+                    window.location.assign('/generate.html')
+            }
+        </script>
+</html>

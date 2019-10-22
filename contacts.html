@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">    
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>
+            <div class="text">
+                <span>Hi </span>
+                <span id="name"></span>,
+                <span>the current validation code for your public key is: </span>
+                <strong id="validation_code"></strong>
+            </div>
+            <br />
+            <br />
+            <h2>Contacts:</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>
+                            Name
+                        </th>
+                        <th>
+                            Date
+                        </th>
+                        <th>
+                            Validation Code
+                        </th>
+                    </tr>
+                </tbody>
+                <tbody id="contact_table">
+                </tbody>
+            </table>
+        </div>
+    </body>
+    <script>
+        if(!localStorage.getItem('ses_private_key')) {
+            window.location.assign('/generate.html')
+        }
+        const publicKey = localStorage.getItem('ses_public_key')
+        const enc = new TextEncoder();
+        let contactsElement = document.getElementById('contact_table')        
+        document.getElementById('name').innerText = localStorage.getItem('ses_name')
+
+        const generateValidationCode = async (key) => {
+            const timeBasedValue = key + parseInt(new Date().getTime() / 30000).toString()
+            const code = await crypto.subtle.digest('SHA-256', enc.encode(timeBasedValue))
+            let oneTimeCode = ""
+            new Uint8Array(code).slice(3,6).forEach(x => oneTimeCode += new String(x).padStart(3, "0") + " ")
+            return oneTimeCode
+        }
+
+        const updatePersonalValidationCode = async () => {
+            document.getElementById('validation_code').innerText = await generateValidationCode(publicKey)
+        }
+        updatePersonalValidationCode()
+
+        const updateContacts = async () => {
+            const contacts = JSON.parse(localStorage.getItem('contacts')) || []
+            const newContactsElement = document.createElement('tbody')
+            for(contact of contacts){
+                const tr = document.createElement('tr')
+                const name = document.createElement('td')
+                name.innerText = contact.name
+                tr.appendChild(name)
+                const date = document.createElement('td')
+                date.innerText = contact.date
+                tr.appendChild(date)
+                const validationCode = document.createElement('td')
+                validationCode.innerText = await generateValidationCode(contact.key)
+                tr.appendChild(validationCode)
+                newContactsElement.appendChild(tr)
+            }
+            contactsElement.replaceWith(newContactsElement)
+            contactsElement = newContactsElement
+        }
+        updateContacts()
+
+        setInterval(() => {
+            updatePersonalValidationCode()
+            updateContacts()
+        }, 1000)
+    </script>
+</html>

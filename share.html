@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">    
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>
+            <div class="row">
+                <button onclick="copyPublicKeyToClipboard()">Copy Link</button>
+                <button onclick="sendPublicKeyViaEmail()">E-Mail Link</button>
+                <button onclick="showPublicKey()">Show Public-Key</button>
+            </div>
+            <div id="public_key" class="column hidden">
+                <h3>Public Key (JWK Format):</h3>
+                <textarea id="public_key_area"></textarea>
+            </div>
+        </div>
+    </body>
+    <script>
+        const PARAMS = {
+                        name: "RSA-OAEP",
+                        modulusLength: 4096,
+                        publicExponent: new Uint8Array([1, 0, 1]),
+                        hash: "SHA-512"
+                    };
+        const FORMAT = "jwk";
+        let publicKey;
+        let name;
+        let link;
+
+        const loadAndDisplay = async () => {
+            if(!localStorage.getItem('ses_public_key')) {
+                window.location.assign('/generate.html')
+                return
+            } 
+
+            publicKey = localStorage.getItem('ses_public_key')
+            name = localStorage.getItem('ses_name')
+            document.getElementById('public_key_area').value = publicKey;
+            link = window.location.origin + '#?key=' + encodeURI(publicKey) + '&name=' + encodeURI(name)
+        }
+
+        
+        const copyPublicKeyToClipboard = () => {
+            const el = document.createElement('textarea')
+
+            el.value = link
+            el.setAttribute('readonly', '')
+            el.style.position = 'absolute'
+            el.style.left = '-9999px'
+            document.body.appendChild(el)
+            el.select()
+            document.execCommand('copy')
+            document.body.removeChild(el)
+        }
+
+        const sendPublicKeyViaEmail = () => {
+            const el = document.createElement('a')
+
+            el.setAttribute('href', 'mailto:&subject=Simply exchange encrypted Messages&body=Hi,%0A%0A please use this link to generate a key and send me an encryped message: %0A%0A' + link)
+            el.style.position = 'absolute'
+            el.style.left = '-9999px'
+            document.body.appendChild(el)
+            el.click()
+            document.body.removeChild(el)
+        }
+
+        const showPublicKey = () => {
+            document.getElementById('public_key').style.display = "flex"
+        }
+
+        loadAndDisplay()
+    </script>
+</html>

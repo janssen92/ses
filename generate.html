@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">        
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>
+            <div class="column" id="data">
+                <div class="row">
+                    <h3>Please enter your Name: </h3>
+                    <input id="name" type="text" />
+                </div>
+                <button id="generateKeyButton" onclick="generateKey()">Key generieren</button>
+            </div>
+            <div class="text" id="loading" hidden>Generating key...</div>
+        </div>
+    </body>
+    <script>
+            const PARAMS = {
+                            name: "RSA-OAEP",
+                            modulusLength: 4096,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: "SHA-512"
+                        };
+            const FORMAT = "jwk";
+    
+            const generateKey = async () => {
+                const name = document.getElementById('name').value
+                if(!name || name.length < 2) {
+                    alert("Please enter a name.")
+
+                    return
+                }
+                document.getElementById('data').setAttribute('hidden', true)
+                document.getElementById('loading').style.display = "block"; 
+                try{
+                    const keyPair = await window.crypto.subtle.generateKey(
+                        PARAMS,
+                        true,
+                        ["encrypt", "decrypt"]
+                    );
+                    localStorage.setItem('ses_public_key', JSON.stringify(await crypto.subtle.exportKey(FORMAT, keyPair.publicKey)))
+                    localStorage.setItem('ses_private_key', JSON.stringify(await crypto.subtle.exportKey(FORMAT, keyPair.privateKey)))
+                    localStorage.setItem('ses_name', name)
+                    window.location.assign('/')
+                } catch (e) {
+                    console.error('Error generating Keys: ', e)
+                }
+            }
+        </script>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">    
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>    
+            <div id="contact-selection" class="column" style="max-width: 700px;">
+                <h3>Please choose the Contact your like to encrypt a message for.</h3>
+                <div>If the person you like to contact is not listed jet, please ask him/her to use the <a href="/share.html">Share-Page</a> an send their public key.</a></div>
+                <select id="contact">
+                    <option></option>
+                </select>
+            </div>
+            <div id="message-container" class="column hidden">
+                <h3 id="message-contact"></h3>
+                <textarea id="message"></textarea>
+                <button id="encrypt" onclick="encrypt()">Encrypt</button>
+                <div class="text" id="loading" hidden>Encrypting...</div>
+                <textarea id="encrypted_message" hidden></textarea>
+            </div>     
+        </div>
+    </body>
+    <script>
+            const PARAMS = {
+                            name: "RSA-OAEP",
+                            modulusLength: 4096,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: "SHA-512"
+                        };
+            const FORMAT = "jwk";
+            const enc = new TextEncoder();
+            let publicKey;
+    
+            const loadPublicKey = async (keyString) => {
+                    if (!publicKey) {
+                        publicKey = await window.crypto.subtle.importKey(FORMAT, JSON.parse(keyString), PARAMS, true, ["encrypt"])
+                    }
+            }
+    
+            const encode = (msg) => {
+                if(typeof msg === "string") {
+                    return enc.encode(msg)
+                }
+                return msg;
+            }
+    
+            const encrypt = async () => {
+                message = document.getElementById('message').value
+                if(!message || message.length < 1) {
+                    alert('Please insert the your message into the textarea.')
+                    return
+                }
+                document.getElementById('loading').style.display = "block";
+                document.getElementById('encrypt').style.display = "none";
+                document.getElementById('message').style.display = "none";
+                console.log(message,  encode(message))
+                if(enc.encode(message).length > 360) {
+                    alert('Message to long. Need to use a combination of symmetric and asymmetric encryption.')
+                    return
+                }
+                const result = await window.crypto.subtle.encrypt(PARAMS, publicKey,  encode(message))
+                document.getElementById('encrypted_message').value = btoa(new Uint8Array(result));
+                document.getElementById('encrypted_message').style.display = "block"; 
+                document.getElementById('loading').style.display = "none";
+            }
+
+            const selectContact = async event => {
+                const key = event.target.value
+                if(key) {
+                    await loadPublicKey(key)
+                    document.getElementById('contact-selection').style.display = 'none';
+                    document.getElementById('message-container').style.display = 'flex';
+                    document.getElementById('message-contact').innerText = "Your message to " + contacts.filter(x => x.key === key)[0].name + ":";
+                }
+            }
+    
+    
+            if(!localStorage.getItem('ses_public_key')) {
+                    window.location.assign('/generate.html')
+            }
+
+            const contacts = JSON.parse(localStorage.getItem('contacts')) || []
+            const contactsElement = document.getElementById('contact')
+            contacts.forEach((contact) => {
+                const option = document.createElement('option')
+                option.innerText = contact.name + ", added " + contact.date
+                option.setAttribute('name', contact.name)
+                option.value = contact.key
+                contactsElement.appendChild(option)
+            })
+            contactsElement.addEventListener('input', selectContact)
+        </script>
+</html>

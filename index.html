@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Encryption Service</title>
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">    
+    </head>
+    <body>
+        <div class="content">
+            <h1>Simple Encryption Service</h1>
+            <div id="nav" class="row">
+                <a href="/encrypt.html"><button>Encrypt</button></a>
+                <a href="/decrypt.html"><button>Decrypt</button></a>
+                <a href="/share.html"><button>Share Key</button></a>
+                <a href="/contacts.html"><button>Contacts & Validation</button></a>
+            </div>
+        </div>
+    </body>
+    <script>
+        const urlParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        if (urlParams.get('key') && urlParams.get('name') ) {
+            const contacts = JSON.parse(localStorage.getItem('contacts')) || []
+            const existingContact = contacts.filter(x => x.key === urlParams.get('key'))
+            if ( existingContact.length > 0) {
+                alert('Key already registered on ' + existingContact[0].date + ' with name: ' + existingContact[0].name)
+            } else {
+                contacts.push({name: urlParams.get('name'), date: new Date(Date.now()).toLocaleString(),key: urlParams.get('key')})
+                localStorage.setItem('contacts', JSON.stringify(contacts))
+            }
+        } 
+        window.location.hash = ""
+        if(!localStorage.getItem('ses_private_key')) {
+                window.location.assign('/generate.html')
+        } 
+    </script>
+</html>
